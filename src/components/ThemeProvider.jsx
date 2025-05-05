@@ -38,6 +38,7 @@ export function ThemeProvider({
   const value = {
     theme,
     setTheme: (theme) => {
+      console.log(theme);
       localStorage.setItem(storageKey, theme);
       setTheme(theme);
     },

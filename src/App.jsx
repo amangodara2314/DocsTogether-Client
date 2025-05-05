@@ -5,13 +5,20 @@ import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import SmoothCursorWrapper from "./components/SmoothCursorWrapper";
 import VerifyEmail from "./pages/auth/VerifyEmail";
+import Dashboard from "./pages/Dashboard";
+import Document from "./pages/Document";
 
 function App() {
-  const { theme } = useSelector((store) => store.theme);
   const routes = createBrowserRouter([
     {
       path: "/",
-      element: <h1>Home</h1>,
+      element: <SmoothCursorWrapper />,
+      children: [
+        {
+          path: "/",
+          element: <Dashboard />,
+        },
+      ],
     },
     {
       path: "/auth",
@@ -32,12 +39,16 @@ function App() {
       ],
     },
     {
+      path: "/document",
+      element: <Document />,
+    },
+    {
       path: "*",
       element: <h1>404</h1>,
     },
   ]);
   return (
-    <ThemeProvider defaultTheme={theme} storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <RouterProvider router={routes} />
     </ThemeProvider>
   );
