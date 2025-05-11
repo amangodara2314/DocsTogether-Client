@@ -1,62 +1,23 @@
-"use client";
-
-import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, MoreVertical, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { templates } from "../lib/constants";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { createDocument } from "../services/documentService";
 
 export default function DocumentTemplates() {
-  const templates = [
-    {
-      id: 1,
-      name: "Blank document",
-      type: "blank",
-      color: "bg-card",
-      icon: "plus",
-    },
-    {
-      id: 2,
-      name: "Resume",
-      type: "Serif",
-      color: "bg-muted",
-      image: "/placeholder.svg?height=160&width=120",
-    },
-    {
-      id: 3,
-      name: "Resume",
-      type: "Coral",
-      color: "bg-rose-100 dark:bg-rose-950/30",
-      image: "/placeholder.svg?height=160&width=120",
-    },
-    {
-      id: 4,
-      name: "Letter",
-      type: "Spearmint",
-      color: "bg-emerald-100 dark:bg-emerald-950/30",
-      image: "/placeholder.svg?height=160&width=120",
-    },
-    {
-      id: 5,
-      name: "Project proposal",
-      type: "Tropic",
-      color: "bg-cyan-100 dark:bg-cyan-950/30",
-      image: "/placeholder.svg?height=160&width=120",
-    },
-    {
-      id: 6,
-      name: "Brochure",
-      type: "Geometric",
-      color: "bg-violet-100 dark:bg-violet-950/30",
-      image: "/placeholder.svg?height=160&width=120",
-    },
-    {
-      id: 7,
-      name: "Report",
-      type: "Luxe",
-      color: "bg-amber-100 dark:bg-amber-950/30",
-      image: "/placeholder.svg?height=160&width=120",
-    },
-  ];
+  const navigate = useNavigate();
+  const handleTemplateClick = (template) => {
+    createDocument({ title: template.name, content: template.content })
+      .then((res) => {
+        navigate(`/document?token=${res.data.docToken}`);
+        toast.success("Document created successfully");
+      })
+      .catch((err) => {
+        console.log(err);
+        toast.error(err.response.data.message || "Something went wrong");
+      });
+  };
 
   return (
     <div className="mb-6">
@@ -69,6 +30,7 @@ export default function DocumentTemplates() {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
         {templates.map((template) => (
           <Card
+            onClick={() => handleTemplateClick(template)}
             key={template.id}
             className="overflow-hidden border border-border hover:border-primary hover:shadow-md transition-all cursor-pointer group rounded-none pb-0 pt-0"
           >

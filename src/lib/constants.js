@@ -1,3 +1,60 @@
 const headerMethods = ["POST", "PUT", "PATCH"];
-
-export { headerMethods };
+const templates = [
+  {
+    id: 1,
+    name: "Blank document",
+    type: "blank",
+    color: "bg-card",
+    icon: "plus",
+    content: {},
+  },
+  {
+    id: 2,
+    name: "Resume",
+    type: "Serif",
+    color: "bg-muted",
+    image: "/placeholder.svg?height=160&width=120",
+    content: {},
+  },
+  {
+    id: 3,
+    name: "Resume",
+    type: "Coral",
+    color: "bg-rose-100 dark:bg-rose-950/30",
+    image: "/placeholder.svg?height=160&width=120",
+    content: {},
+  },
+  {
+    id: 4,
+    name: "Letter",
+    type: "Spearmint",
+    color: "bg-emerald-100 dark:bg-emerald-950/30",
+    image: "/placeholder.svg?height=160&width=120",
+    content: {},
+  },
+  {
+    id: 5,
+    name: "Project proposal",
+    type: "Tropic",
+    color: "bg-cyan-100 dark:bg-cyan-950/30",
+    image: "/placeholder.svg?height=160&width=120",
+    content: {},
+  },
+  {
+    id: 6,
+    name: "Brochure",
+    type: "Geometric",
+    color: "bg-violet-100 dark:bg-violet-950/30",
+    image: "/placeholder.svg?height=160&width=120",
+    content: {},
+  },
+  {
+    id: 7,
+    name: "Report",
+    type: "Luxe",
+    color: "bg-amber-100 dark:bg-amber-950/30",
+    image: "/placeholder.svg?height=160&width=120",
+    content: {},
+  },
+];
+export { headerMethods, templates };

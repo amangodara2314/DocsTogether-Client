@@ -1,4 +1,3 @@
-// DocumentPage.jsx
 import React, { useState } from "react";
 import Tiptap from "../components/Tiptap";
 

@@ -9,6 +9,10 @@ const signup = async (name, email, password) => {
 };
 
 const verifyEmail = async (token) => {
-  return api.get("/auth/verify-email?token=" + token, { token });
+  return api.get("/auth/verify-email?token=" + token);
 };
-export { login, signup, verifyEmail };
+
+const getUser = async () => {
+  return api.get("/auth/user");
+};
+export { login, signup, verifyEmail, getUser };

@@ -1,4 +1,3 @@
-import { useSelector } from "react-redux";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import Login from "./pages/auth/Login";
@@ -7,6 +6,7 @@ import SmoothCursorWrapper from "./components/SmoothCursorWrapper";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import Dashboard from "./pages/Dashboard";
 import Document from "./pages/Document";
+import socket from "./configs/socket";
 
 function App() {
   const routes = createBrowserRouter([

@@ -24,8 +24,10 @@ api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response?.status === 403) {
+      console.log(error.response);
+      localStorage.clear();
       Cookies.remove("auth-token");
-      window.location.href = "/auth/login";
+      window.location.replace("/auth/login");
     }
     return Promise.reject(error);
   }
