@@ -8,4 +8,12 @@ const getDocuments = async (query) => {
   return api.get("/document" + "?" + query);
 };
 
-export { createDocument, getDocuments };
+const renameDoc = async (id, data) => {
+  return api.patch("/document/rename/" + id, data);
+};
+
+const deleteDoc = async (id) => {
+  return api.delete("/document/" + id);
+};
+
+export { createDocument, getDocuments, renameDoc, deleteDoc };

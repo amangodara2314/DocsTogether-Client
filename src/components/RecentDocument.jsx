@@ -13,7 +13,7 @@ import { getDocuments } from "../services/documentService";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import DocumentSkeleton from "./DocumentLoader";
-import { setDocument } from "../features/document/documentSlice";
+import { setDocuments } from "../features/document/documentSlice";
 import DocumentCard from "./DocumentCard";
 
 export function RecentDocuments({}) {
@@ -26,7 +26,7 @@ export function RecentDocuments({}) {
   useEffect(() => {
     getDocuments(`page=${page}&sortBy=${sortBy}`)
       .then((res) => {
-        dispatch(setDocument({ documents: res.data.documents }));
+        dispatch(setDocuments({ documents: res.data.documents }));
       })
       .catch((err) => {
         toast.error(err.response.data.message || "Error fetching documents");

@@ -8,18 +8,26 @@ import { getUser } from "../services/authServices";
 import { setUser } from "../features/user/userSlice";
 import Cookies from "js-cookie";
 import { useDispatch } from "react-redux";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const { user } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const token = Cookies.get("auth-token");
   const [isAuthenticating, setIsAuthenticating] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    getUser().then((res) => {
-      dispatch(setUser({ user: res.data.user, token }));
-      setIsAuthenticating(false);
-    });
+    getUser()
+      .then((res) => {
+        dispatch(setUser({ user: res.data.user, token }));
+        setIsAuthenticating(false);
+      })
+      .catch((err) => {
+        toast.error(err.response.data.message || "Error fetching user");
+        navigate("/auth/login");
+      });
   }, []);
   if (isAuthenticating || !user) {
     return <Loading />;
