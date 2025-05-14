@@ -1,6 +1,9 @@
 import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   documents: null,
+  document: null,
+  role: "VIEWER",
+  presence: [],
 };
 
 const documentSlice = createSlice({
@@ -24,9 +27,23 @@ const documentSlice = createSlice({
         (doc) => doc.id !== action.payload.id
       );
     },
+
+    setDocument: (state, action) => {
+      state.document = action.payload.document;
+      state.role = action.payload.role;
+    },
+
+    updatePresence: (state, action) => {
+      state.presence = action.payload.presence;
+    },
   },
 });
 
 export default documentSlice.reducer;
-export const { setDocuments, renameDocument, deleteDocument } =
-  documentSlice.actions;
+export const {
+  setDocuments,
+  renameDocument,
+  deleteDocument,
+  setDocument,
+  updatePresence,
+} = documentSlice.actions;

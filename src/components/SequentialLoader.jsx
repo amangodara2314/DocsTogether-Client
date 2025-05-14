@@ -1,19 +1,34 @@
 import { useState, useEffect } from "react";
 import { Check, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSelector } from "react-redux";
+import Cookies from "js-cookie";
+import { useDispatch } from "react-redux";
+import { setUser } from "../features/user/userSlice";
+import { toast } from "sonner";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { getUser } from "../services/authServices";
+import { accessDocument } from "../services/documentService";
+import { setDocument, setDocuments } from "../features/document/documentSlice";
+import { set } from "react-hook-form";
+import socket from "../configs/socket";
 
 export default function SequentialLoader({
   onComplete,
   className,
   currentStep,
   setCurrentStep,
-  isLoading,
-  setIsLoading,
+  completedSteps,
+  setCompletedSteps,
   error,
   setError,
 }) {
-  const [completedSteps, setCompletedSteps] = useState([]);
+  const { user } = useSelector((store) => store.user);
+  const { document, role } = useSelector((store) => store.document);
   const [progress, setProgress] = useState(0);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const steps = [
     {
@@ -23,73 +38,110 @@ export default function SequentialLoader({
     },
     {
       id: 2,
-      title: "User Data",
-      description: "Loading your profile information",
+      title: "Document Setup",
+      description: "Loading your document data",
     },
     {
       id: 3,
       title: "Content",
       description: "Getting your personalized content",
     },
-    {
-      id: 4,
-      title: "Dashboard",
-      description: "Setting up your experience",
-    },
   ];
 
-  // Simulate API calls
-  const makeApiCall = (stepIndex) => {
-    if (stepIndex === 2) {
-      return new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error("Failed to load user data."));
-        }, 1000);
-      });
+  const fetchUserData = async () => {
+    setCurrentStep(0);
+    setProgress(0);
+    if (user || !Cookies.get("auth-token")) {
+      setCompletedSteps((prev) => [...prev, 0]);
+      setProgress(25);
+    } else {
+      const response = await getUser();
+      if (response.status == 200) {
+        console.log(response.data.user);
+        dispatch(
+          setUser({
+            user: response.data.user,
+            token: Cookies.get("auth-token"),
+          })
+        );
+        setCompletedSteps((prev) => [...prev, 0]);
+        setProgress(33);
+      } else {
+        navigate("/auth/login");
+        throw new Error("Failed to authenticate. Please log in.");
+      }
     }
-    return new Promise((resolve) => {
-      // Simulate network delay (between 1-2 seconds)
-      const delay = 1000 + Math.random() * 1000;
-      setTimeout(() => {
-        resolve();
-      }, delay);
+  };
+
+  const joinDocument = async () => {
+    console.log(document);
+    setCurrentStep(2);
+    if (!document) {
+      console.log("Document not found");
+      setError("Document not found");
+      return;
+    }
+    socket.emit("join", {
+      docId: document.id,
+      userId: user.id || null,
+      name: user.name || null,
+      avatar: user.avatar || null,
+      role: role || "VIEWER",
     });
+  };
+
+  const getDocument = async () => {
+    setCurrentStep(1);
+    const token = searchParams.get("token");
+    try {
+      const res = await accessDocument(token);
+      if (res.status === 200) {
+        dispatch(
+          setDocument({ document: res.data.document, role: res.data.role })
+        );
+        setCompletedSteps((prev) => [...prev, 1]);
+        setProgress(66);
+      } else {
+        throw new Error(res.data.message || "Error fetching document");
+      }
+    } catch (error) {
+      setError(error?.response?.data?.message || "Error fetching document");
+      throw error;
+    }
   };
 
   useEffect(() => {
     const processApiCalls = async () => {
       try {
-        setCurrentStep(0);
-        setProgress(0);
-        await makeApiCall(0);
-        setCompletedSteps((prev) => [...prev, 0]);
-        setProgress(25);
-
-        setCurrentStep(1);
-        await makeApiCall(1);
-        setCompletedSteps((prev) => [...prev, 1]);
-        setProgress(50);
-
-        setCurrentStep(2);
-        await makeApiCall(2);
-        setCompletedSteps((prev) => [...prev, 2]);
-        setProgress(75);
-
-        setCurrentStep(3);
-        await makeApiCall(3);
-        setCompletedSteps((prev) => [...prev, 3]);
-        setProgress(100);
-
-        setIsLoading(false);
-        if (onComplete) onComplete();
+        await fetchUserData();
+        await getDocument();
       } catch (err) {
         setError(err.message || "An error occurred.");
-        setIsLoading(false);
       }
     };
 
     processApiCalls();
   }, [onComplete]);
+
+  useEffect(() => {
+    if (document?.id && user?.id) {
+      joinDocument();
+    }
+  }, [document, user]);
+
+  useEffect(() => {
+    socket.on("presence:update", (data) => {
+      console.log("Presence update", data);
+      setProgress(100);
+      setTimeout(() => {
+        setCompletedSteps((prev) => [...prev, 2]);
+      }, 1000);
+    });
+
+    return () => {
+      socket.off("presence:update");
+    };
+  }, []);
 
   return (
     <div className={cn("w-full max-w-md mx-auto", className)}>
@@ -162,9 +214,15 @@ export default function SequentialLoader({
           </div>
         )}
 
-        {!isLoading && !error && (
+        {progress != 100 && completedSteps.length == 2 && !error && (
           <div className="text-sm text-primary font-medium">
-            All set! Redirecting you now...
+            Almost there...Please wait a moment.
+          </div>
+        )}
+
+        {progress == 100 && !error && (
+          <div className="text-sm text-primary font-medium">
+            You are all set! Redirecting...
           </div>
         )}
       </div>

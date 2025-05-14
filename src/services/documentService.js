@@ -16,4 +16,8 @@ const deleteDoc = async (id) => {
   return api.delete("/document/" + id);
 };
 
-export { createDocument, getDocuments, renameDoc, deleteDoc };
+const accessDocument = async (token) => {
+  return api.get("/document/join/" + token);
+};
+
+export { createDocument, getDocuments, renameDoc, deleteDoc, accessDocument };
