@@ -17,6 +17,7 @@ export default function DocumentDropdown({
   className,
   groupHover = false,
   doc,
+  handleRedirect,
 }) {
   const { user } = useSelector((state) => state.user);
   const [isOpen, setIsOpen] = useState(false);
@@ -63,7 +64,11 @@ export default function DocumentDropdown({
           <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => handleRedirect(doc)}>
+          Open
+        </DropdownMenuItem>
         <RenameDialog
           id={doc?.id}
           title={doc?.title}

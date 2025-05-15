@@ -146,3 +146,10 @@ body {
     border: 2px solid var(--muted);
   }
 }
+
+.tiptap::after {
+  content: "";
+  display: block;
+  height: 100%;
+  pointer-events: none;
+}

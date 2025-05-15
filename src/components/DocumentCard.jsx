@@ -47,11 +47,11 @@ export default function DocumentCard({ view, documents }) {
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {documents?.map((doc) => (
         <Card
-          onClick={() => handleRedirect(doc)}
           key={doc.id}
           className="overflow-hidden border border-border hover:border-primary hover:shadow-md transition-all cursor-pointer group py-0 relative"
         >
           <DocumentDropdown
+            handleRedirect={handleRedirect}
             doc={doc}
             className={"absolute top-2 right-2 cursor-pointer"}
           />
@@ -108,7 +108,7 @@ export default function DocumentCard({ view, documents }) {
               </div>
             </div>
           </div>
-          <DocumentDropdown doc={doc} />
+          <DocumentDropdown handleRedirect={handleRedirect} doc={doc} />
         </div>
       ))}
     </div>

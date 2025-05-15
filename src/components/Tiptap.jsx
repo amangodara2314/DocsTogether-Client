@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useRef } from "react";
 import {
   Bold,
@@ -21,6 +23,9 @@ import {
   Highlighter,
   Save,
   Table,
+  Heading1,
+  Heading2,
+  Heading3,
 } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -37,7 +42,6 @@ import TableExtension from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
-
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -59,7 +63,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { set } from "react-hook-form";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const fontSizes = [
   8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 48, 60, 72,
@@ -115,10 +124,11 @@ export default function Tiptap() {
   );
   const [leftMargin, setLeftMargin] = useState(50);
   const [rightMargin, setRightMargin] = useState(50);
-  const [showRuler, setShowRuler] = useState(true);
+  const showRuler = true; // Always show ruler
   const [isTableMenuOpen, setIsTableMenuOpen] = useState(false);
   const [isDraggingLeft, setIsDraggingLeft] = useState(false);
   const [isDraggingRight, setIsDraggingRight] = useState(false);
+
   const pageRef = useRef(null);
 
   useEffect(() => {
@@ -134,17 +144,19 @@ export default function Tiptap() {
   const rulerRef = useRef(null);
   const docContainerRef = useRef(null);
   const pageWidth = 8.5 * 96;
-
-  const CustomFontSize = FontSize.configure({
-    types: ["textStyle"],
-    defaultSize: "11px",
-  });
+  const pageHeight = 11 * 96;
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: true,
+        bulletList: true,
+        orderedList: true,
+      }),
       UnderlineExtension,
-      LinkExtension,
+      LinkExtension.configure({
+        openOnClick: false,
+      }),
       Image,
       TextAlign.configure({
         types: ["heading", "paragraph", "tableCell", "tableHeader"],
@@ -155,7 +167,9 @@ export default function Tiptap() {
         multicolor: true,
       }),
       FontFamily,
-      CustomFontSize,
+      FontSize.configure({
+        types: ["textStyle"],
+      }),
       TableExtension.configure({
         resizable: true,
       }),
@@ -166,13 +180,28 @@ export default function Tiptap() {
     content: documentContent,
     onUpdate: ({ editor }) => {
       setDocumentContent(editor.getHTML());
-
       localStorage.setItem("documentContent", editor.getHTML());
+    },
+    onSelectionUpdate: ({ editor }) => {
+      // Update font size when selection changes
+      if (editor.isActive("textStyle")) {
+        const attrs = editor.getAttributes("textStyle");
+        if (attrs.fontSize) {
+          // Extract the numeric part of fontSize (remove 'px')
+          const size = Number.parseInt(attrs.fontSize.replace("px", ""));
+          if (!isNaN(size)) {
+            setFontSize(size);
+          }
+        }
+        if (attrs.fontFamily) {
+          setFontFamily(attrs.fontFamily);
+        }
+      }
     },
     editorProps: {
       attributes: {
-        class: "min-h-full outline-none",
-        style: `font-size: 11px; padding-left: ${leftMargin}px; padding-right: ${rightMargin}px;`,
+        class: "min-h-[1056px] outline-none",
+        style: `padding-left: ${leftMargin}px; padding-right: ${rightMargin}px;`,
       },
     },
   });
@@ -180,8 +209,8 @@ export default function Tiptap() {
   useEffect(() => {
     const savedContent = localStorage.getItem("documentContent");
     const savedTitle = localStorage.getItem("documentTitle");
-    const savedLeftMargin = localStorage.getItem("leftMargin");
-    const savedRightMargin = localStorage.getItem("rightMargin");
+    const savedLeftMargin = localStorage.getItem("leftMargin") || "0";
+    const savedRightMargin = localStorage.getItem("rightMargin") || "0";
 
     if (savedContent) {
       setDocumentContent(savedContent);
@@ -191,10 +220,10 @@ export default function Tiptap() {
       setDocumentTitle(savedTitle);
     }
     if (savedLeftMargin) {
-      setLeftMargin(parseInt(savedLeftMargin));
+      setLeftMargin(Number.parseInt(savedLeftMargin));
     }
     if (savedRightMargin) {
-      setRightMargin(parseInt(savedRightMargin));
+      setRightMargin(Number.parseInt(savedRightMargin));
     }
   }, [editor]);
 
@@ -204,8 +233,8 @@ export default function Tiptap() {
     const autoSaveInterval = setInterval(() => {
       localStorage.setItem("documentContent", documentContent);
       localStorage.setItem("documentTitle", documentTitle);
-      localStorage.setItem("leftMargin", leftMargin);
-      localStorage.setItem("rightMargin", rightMargin);
+      localStorage.setItem("leftMargin", leftMargin.toString());
+      localStorage.setItem("rightMargin", rightMargin.toString());
     }, 10000);
 
     return () => clearInterval(autoSaveInterval);
@@ -213,6 +242,7 @@ export default function Tiptap() {
 
   useEffect(() => {
     if (!editor) return;
+
     editor.view.dom.style.paddingLeft = `${leftMargin}px`;
     editor.view.dom.style.paddingRight = `${rightMargin}px`;
   }, [editor, leftMargin, rightMargin]);
@@ -223,7 +253,6 @@ export default function Tiptap() {
     const observer = new MutationObserver(() => {
       const container = docContainerRef.current;
       const editorHeight = editor.view.dom.scrollHeight;
-
       const A4HeightInPixels = 11.69 * 96;
 
       if (editorHeight > A4HeightInPixels - 96) {
@@ -259,7 +288,6 @@ export default function Tiptap() {
 
       if (isDraggingRight) {
         const newRightMargin = Math.max(0, pageWidth - position);
-
         if (pageWidth - newRightMargin > leftMargin + 200) {
           setRightMargin(newRightMargin);
         }
@@ -269,9 +297,8 @@ export default function Tiptap() {
     const handleMouseUp = () => {
       setIsDraggingLeft(false);
       setIsDraggingRight(false);
-
-      localStorage.setItem("leftMargin", leftMargin);
-      localStorage.setItem("rightMargin", rightMargin);
+      localStorage.setItem("leftMargin", leftMargin.toString());
+      localStorage.setItem("rightMargin", rightMargin.toString());
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -369,9 +396,41 @@ export default function Tiptap() {
     URL.revokeObjectURL(url);
   };
 
+  const exportAsPDF = () => {
+    const content = editor?.getHTML() || "";
+    const printWindow = window.open("", "_blank");
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${documentTitle}</title>
+          <style>
+            @page { size: A4; margin: 0.5in; }
+            body { font-family: ${fontFamily}, sans-serif; margin: 0; padding: 0; }
+            .container { width: 8.27in; min-height: 11.69in; margin: 0 auto; padding: 0; }
+          </style>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 500);
+            }
+          </script>
+        </head>
+        <body>
+          <div class="container">${content}</div>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  };
+
   const saveAs = (format) => {
     const content = editor?.getHTML() || "";
-    let blob, mimeType, fileExtension;
+    let blob, fileExtension;
 
     switch (format) {
       case "html":
@@ -406,6 +465,8 @@ export default function Tiptap() {
         break;
       case "markdown":
         return exportAsMarkdown();
+      case "pdf":
+        return exportAsPDF();
       default:
         return;
     }
@@ -422,11 +483,17 @@ export default function Tiptap() {
 
   const insertTable = (rows, cols) => {
     if (!editor) return;
+
     editor
       .chain()
       .focus()
-      .insertTable({ rows, cols, withHeaderRow: false })
+      .insertTable({
+        rows,
+        cols,
+        withHeaderRow: true,
+      })
       .run();
+
     setIsTableMenuOpen(false);
   };
 
@@ -439,13 +506,13 @@ export default function Tiptap() {
   const rightMarginPosition = pageWidth - rightMargin;
 
   return (
-    <div className="flex h-screen flex-col bg-gray-100">
+    <div className="flex h-screen flex-col bg-gray-50">
       {/* Top Toolbar */}
-      <header className="flex items-center border-b py-2 px-4">
+      <header className="flex items-center border-b py-2 px-4 bg-white shadow-sm">
         <div className="flex items-center mr-8">
           <FileText className="mr-2 h-5 w-5 text-blue-600" />
           <span
-            className="font-medium"
+            className="font-medium outline-none focus:border-b focus:border-blue-500"
             contentEditable
             suppressContentEditableWarning
             onBlur={handleTitleChange}
@@ -488,59 +555,81 @@ export default function Tiptap() {
                     <DropdownMenuItem onClick={() => saveAs("markdown")}>
                       Markdown (.md)
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => saveAs("pdf")}>
+                      PDF (.pdf)
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => saveAs("html")}
-            title="Save document"
-          >
-            <Save className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={handlePrint}
-            title="Print document"
-          >
-            <Printer className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8"
-            onClick={() => setShowRuler(!showRuler)}
-          >
-            {showRuler ? "Hide Ruler" : "Show Ruler"}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => saveAs("html")}
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Save document</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handlePrint}
+                >
+                  <Printer className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Print document</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </header>
 
-      <div className="border-b px-4 py-1 flex items-center flex-wrap bg-slate-100">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => editor?.chain().focus().undo().run()}
-          disabled={!editor?.can().undo()}
-        >
-          <Undo2 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => editor?.chain().focus().redo().run()}
-          disabled={!editor?.can().redo()}
-        >
-          <Redo2 className="h-4 w-4" />
-        </Button>
+      <div className="border-b px-4 py-1 flex items-center flex-wrap gap-1 bg-white shadow-sm">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => editor?.chain().focus().undo().run()}
+                disabled={!editor?.can().undo()}
+              >
+                <Undo2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Undo</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => editor?.chain().focus().redo().run()}
+                disabled={!editor?.can().redo()}
+              >
+                <Redo2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Redo</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         <Separator orientation="vertical" className="mx-2 h-6" />
 
         <Select value={fontFamily} onValueChange={handleFontFamilyChange}>
@@ -555,6 +644,7 @@ export default function Tiptap() {
             ))}
           </SelectContent>
         </Select>
+
         <div className="flex items-center ml-2">
           <Button
             variant="ghost"
@@ -588,43 +678,141 @@ export default function Tiptap() {
             <Plus className="h-3 w-3" />
           </Button>
         </div>
+
         <Separator orientation="vertical" className="mx-2 h-6" />
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn("h-8 w-8", editor?.isActive("bold") && "bg-slate-200")}
-          onClick={() => editor?.chain().focus().toggleBold().run()}
-        >
-          <Bold className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-8 w-8",
-            editor?.isActive("italic") && "bg-slate-200"
-          )}
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
-        >
-          <Italic className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-8 w-8",
-            editor?.isActive("underline") && "bg-slate-200"
-          )}
-          onClick={() => editor?.chain().focus().toggleUnderline().run()}
-        >
-          <Underline className="h-4 w-4" />
-        </Button>
+
+        {/* Heading buttons */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  editor?.isActive("heading", { level: 1 }) && "bg-slate-200"
+                )}
+                onClick={() => {
+                  editor?.chain().focus().toggleHeading({ level: 1 }).run();
+                }}
+              >
+                <Heading1 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Heading 1</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  editor?.isActive("heading", { level: 2 }) && "bg-slate-200"
+                )}
+                onClick={() => {
+                  editor?.chain().focus().toggleHeading({ level: 2 }).run();
+                }}
+              >
+                <Heading2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Heading 2</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  editor?.isActive("heading", { level: 3 }) && "bg-slate-200"
+                )}
+                onClick={() => {
+                  editor?.chain().focus().toggleHeading({ level: 3 }).run();
+                }}
+              >
+                <Heading3 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Heading 3</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <Separator orientation="vertical" className="mx-2 h-6" />
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  editor?.isActive("bold") && "bg-slate-200"
+                )}
+                onClick={() => editor?.chain().focus().toggleBold().run()}
+              >
+                <Bold className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Bold</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  editor?.isActive("italic") && "bg-slate-200"
+                )}
+                onClick={() => editor?.chain().focus().toggleItalic().run()}
+              >
+                <Italic className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Italic</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  editor?.isActive("underline") && "bg-slate-200"
+                )}
+                onClick={() => editor?.chain().focus().toggleUnderline().run()}
+              >
+                <Underline className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Underline</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <Palette className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Palette className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Text color</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <PopoverContent className="w-64 p-2">
             <div className="grid grid-cols-6 gap-1">
               {textColors.map((color) => (
@@ -641,12 +829,20 @@ export default function Tiptap() {
             </div>
           </PopoverContent>
         </Popover>
+
         <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <Highlighter className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Highlighter className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Highlight</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <PopoverContent className="w-64 p-2">
             <div className="grid grid-cols-6 gap-1">
               {highlightColors.map((color) => (
@@ -667,97 +863,210 @@ export default function Tiptap() {
             </div>
           </PopoverContent>
         </Popover>
+
         <Separator orientation="vertical" className="mx-2 h-6" />
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-8 w-8",
-            editor?.isActive({ textAlign: "left" }) && "bg-slate-200"
-          )}
-          onClick={() => editor?.chain().focus().setTextAlign("left").run()}
-        >
-          <AlignLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-8 w-8",
-            editor?.isActive({ textAlign: "center" }) && "bg-slate-200"
-          )}
-          onClick={() => editor?.chain().focus().setTextAlign("center").run()}
-        >
-          <AlignCenter className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-8 w-8",
-            editor?.isActive({ textAlign: "right" }) && "bg-slate-200"
-          )}
-          onClick={() => editor?.chain().focus().setTextAlign("right").run()}
-        >
-          <AlignRight className="h-4 w-4" />
-        </Button>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  editor?.isActive({ textAlign: "left" }) && "bg-slate-200"
+                )}
+                onClick={() =>
+                  editor?.chain().focus().setTextAlign("left").run()
+                }
+              >
+                <AlignLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Align left</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  editor?.isActive({ textAlign: "center" }) && "bg-slate-200"
+                )}
+                onClick={() =>
+                  editor?.chain().focus().setTextAlign("center").run()
+                }
+              >
+                <AlignCenter className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Align center</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  editor?.isActive({ textAlign: "right" }) && "bg-slate-200"
+                )}
+                onClick={() =>
+                  editor?.chain().focus().setTextAlign("right").run()
+                }
+              >
+                <AlignRight className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Align right</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         <Separator orientation="vertical" className="mx-2 h-6" />
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-8 w-8",
-            editor?.isActive("bulletList") && "bg-slate-200"
-          )}
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
-        >
-          <List className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-8 w-8",
-            editor?.isActive("orderedList") && "bg-slate-200"
-          )}
-          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  editor?.isActive("bulletList") && "bg-slate-200"
+                )}
+                onClick={() => {
+                  editor?.chain().focus().toggleBulletList().run();
+                }}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Bullet list</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  editor?.isActive("orderedList") && "bg-slate-200"
+                )}
+                onClick={() => {
+                  editor?.chain().focus().toggleOrderedList().run();
+                }}
+              >
+                <ListOrdered className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Numbered list</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         <Separator orientation="vertical" className="mx-2 h-6" />
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn("h-8 w-8", editor?.isActive("link") && "bg-slate-200")}
-          onClick={() => {
-            const url = window.prompt("URL");
-            if (url) {
-              editor?.chain().focus().setLink({ href: url }).run();
-            }
-          }}
-        >
-          <LinkIcon className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => {
-            const url = window.prompt("Image URL");
-            if (url) {
-              editor?.chain().focus().setImage({ src: url }).run();
-            }
-          }}
-        >
-          <ImageIcon className="h-4 w-4" />
-        </Button>
+
+        <Popover>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-8 w-8",
+                      editor?.isActive("link") && "bg-slate-200"
+                    )}
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Insert link</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <PopoverContent className="w-80 p-3">
+            <div className="space-y-2">
+              <h4 className="font-medium">Insert Link</h4>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="https://example.com"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  id="link-url"
+                />
+                <Button
+                  onClick={() => {
+                    const url = document.getElementById("link-url")?.value;
+                    if (url) {
+                      editor?.chain().focus().setLink({ href: url }).run();
+                    }
+                  }}
+                >
+                  Apply
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+        <Popover>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <ImageIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Insert image</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <PopoverContent className="w-80 p-3">
+            <div className="space-y-2">
+              <h4 className="font-medium">Insert Image</h4>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="https://example.com/image.jpg"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  id="image-url"
+                />
+                <Button
+                  onClick={() => {
+                    const url = document.getElementById("image-url")?.value;
+                    if (url) {
+                      editor?.chain().focus().setImage({ src: url }).run();
+                    }
+                  }}
+                >
+                  Insert
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <Table className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Table className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Insert table</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <DropdownMenuContent>
             <div className="p-2">
               <div className="text-sm font-medium mb-2">Insert Table</div>
@@ -780,15 +1089,17 @@ export default function Tiptap() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
       {showRuler && (
-        <div className="pr-2">
+        <div className="pr-2 bg-white border-b">
           <div
             ref={rulerRef}
-            className="relative h-8 bg-white border-b border-gray-300 select-none rounded"
+            className="relative h-8 bg-white select-none"
             style={{ width: `${pageWidth}px`, margin: "0 auto" }}
           >
+            {/* Ruler markings */}
             <div className="absolute inset-0 flex">
-              {[...Array(100)].map((_, i) => (
+              {[...Array(Math.floor(pageWidth / 10))].map((_, i) => (
                 <div
                   key={i}
                   className="flex-1 flex flex-col items-center justify-end"
@@ -797,29 +1108,31 @@ export default function Tiptap() {
                   <div
                     className={`${
                       i % 10 === 0
-                        ? "h-3 w-0.5 bg-black"
+                        ? "h-3 w-0.5 bg-gray-600"
                         : i % 5 === 0
-                        ? "h-2 w-0.5 bg-gray-600"
-                        : "h-1 w-0.5 bg-gray-400"
+                        ? "h-2 w-0.5 bg-gray-400"
+                        : "h-1 w-0.5 bg-gray-300"
                     }`}
                   ></div>
-                  {i % 10 === 0 && <span className="text-xs">{i}</span>}
+                  {i % 10 === 0 && (
+                    <span className="text-[10px] text-gray-500">{i}</span>
+                  )}
                 </div>
               ))}
             </div>
 
+            {/* Margin handles */}
             <div
               onMouseDown={() => setIsDraggingLeft(true)}
-              className="absolute top-0 h-full w-1 bg-blue-500 cursor-ew-resize"
+              className="absolute top-0 h-full w-1 bg-blue-500 cursor-ew-resize rounded-full ease-in hover:w-1.5"
               style={{ left: `${leftMargin}px` }}
-              title="Drag to adjust left margin"
+              title="Left margin"
             />
-
             <div
               onMouseDown={() => setIsDraggingRight(true)}
-              className="absolute top-0 h-full w-1 bg-red-500 cursor-ew-resize"
+              className="absolute top-0 h-full w-1 bg-blue-500 cursor-ew-resize rounded-full ease-in hover:w-1.5"
               style={{ left: `${rightMarginPosition}px` }}
-              title="Drag to adjust right margin"
+              title="Right margin"
             />
           </div>
         </div>
@@ -829,7 +1142,7 @@ export default function Tiptap() {
         <div className="w-[8.5in] my-8" ref={docContainerRef}>
           <div
             ref={pageRef}
-            className="bg-white min-h-[11in] shadow-md border py-8"
+            className="bg-white min-h-[11in] shadow-lg border rounded-sm py-8"
           >
             <EditorContent
               editor={editor}
