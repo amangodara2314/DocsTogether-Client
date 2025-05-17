@@ -57,7 +57,6 @@ export default function SequentialLoader({
     } else {
       const response = await getUser();
       if (response.status == 200) {
-        console.log(response.data.user);
         dispatch(
           setUser({
             user: response.data.user,
@@ -97,7 +96,13 @@ export default function SequentialLoader({
       const res = await accessDocument(token);
       if (res.status === 200) {
         dispatch(
-          setDocument({ document: res.data.document, role: res.data.role })
+          setDocument({
+            document: res.data.document,
+            role: res.data.role,
+            leftMargin: res.data.document.leftMargin,
+            rightMargin: res.data.document.rightMargin,
+            content: res.data.document.content,
+          })
         );
         setCompletedSteps((prev) => [...prev, 1]);
         setProgress(66);
@@ -106,7 +111,7 @@ export default function SequentialLoader({
       }
     } catch (error) {
       setError(error?.response?.data?.message || "Error fetching document");
-      throw error;
+      throw error?.response?.data?.message || "Error fetching document";
     }
   };
 
@@ -116,7 +121,7 @@ export default function SequentialLoader({
         await fetchUserData();
         await getDocument();
       } catch (err) {
-        setError(err.message || "An error occurred.");
+        setError(err || "An error occurred.");
       }
     };
 

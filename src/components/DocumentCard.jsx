@@ -48,7 +48,7 @@ export default function DocumentCard({ view, documents }) {
       {documents?.map((doc) => (
         <Card
           key={doc.id}
-          className="overflow-hidden border border-border hover:border-primary hover:shadow-md transition-all cursor-pointer group py-0 relative"
+          className="overflow-hidden border border-border hover:border-primary hover:shadow-md transition-all group py-0 relative"
         >
           <DocumentDropdown
             handleRedirect={handleRedirect}
@@ -90,7 +90,7 @@ export default function DocumentCard({ view, documents }) {
         <div
           key={doc.id}
           onClick={() => handleRedirect(doc)}
-          className={`flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer ${
+          className={`flex items-center justify-between p-3 hover:bg-muted/50 ${
             index !== documents.length - 1 ? "border-b border-border" : ""
           }`}
         >

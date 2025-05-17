@@ -21,12 +21,17 @@ export default function Dashboard() {
   useEffect(() => {
     getUser()
       .then((res) => {
-        dispatch(setUser({ user: res.data.user, token }));
-        setIsAuthenticating(false);
+        if (res.status == 200) {
+          dispatch(setUser({ user: res.data.user, token }));
+          setIsAuthenticating(false);
+        } else {
+          toast.error(res?.data?.message || "Error fetching user");
+          navigate("/auth/login", { replace: true });
+        }
       })
       .catch((err) => {
-        toast.error(err.response.data.message || "Error fetching user");
-        navigate("/auth/login");
+        toast.error(err?.response?.data?.message || "Error fetching user");
+        navigate("/auth/login", { replace: true });
       });
   }, []);
   if (isAuthenticating || !user) {

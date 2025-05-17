@@ -3,6 +3,7 @@ import Tiptap from "../components/Tiptap";
 import SequentialLoader from "../components/SequentialLoader";
 import { useSelector } from "react-redux";
 import socket from "../configs/socket";
+import EditorContext from "../context/EditorContext";
 
 const DocumentPage = () => {
   const { document } = useSelector((store) => store.document);
@@ -39,7 +40,9 @@ const DocumentPage = () => {
   }
   return (
     <div className="min-h-screen bg-gray-100">
-      <Tiptap />
+      <EditorContext>
+        <Tiptap />
+      </EditorContext>
     </div>
   );
 };

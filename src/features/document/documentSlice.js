@@ -4,6 +4,9 @@ const initialState = {
   document: null,
   role: "VIEWER",
   presence: [],
+  leftMargin: 0,
+  rightMargin: 0,
+  content: null,
 };
 
 const documentSlice = createSlice({
@@ -31,10 +34,20 @@ const documentSlice = createSlice({
     setDocument: (state, action) => {
       state.document = action.payload.document;
       state.role = action.payload.role;
+      state.leftMargin = action.payload.leftMargin;
+      state.rightMargin = action.payload.rightMargin;
+      state.content = action.payload.content;
     },
 
     updatePresence: (state, action) => {
       state.presence = action.payload.presence;
+    },
+
+    setLeftMargin: (state, action) => {
+      state.leftMargin = action.payload;
+    },
+    setRightMargin: (state, action) => {
+      state.rightMargin = action.payload;
     },
   },
 });
@@ -46,4 +59,6 @@ export const {
   deleteDocument,
   setDocument,
   updatePresence,
+  setLeftMargin,
+  setRightMargin,
 } = documentSlice.actions;
